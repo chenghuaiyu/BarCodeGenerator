@@ -107,7 +107,13 @@ namespace SinoCloudWisdomBarCodeGenerator
 
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
+            //myListView.Items.Add(e.Key.ToString()+"\t" + e.SystemKey.ToString() + "\t"+e.ToString());
             if (e.Key != System.Windows.Input.Key.Enter)
+            //    if (e.Key > System.Windows.Input.Key.D0 && e.Key < System.Windows.Input.Key.Z)
+            //{
+            //    return;
+            //}
+            //    if (e.Key == System.Windows.Input.Key.System && e.SystemKey == System.Windows.Input.Key.LeftAlt)
             {
                 return;
             }
@@ -118,6 +124,26 @@ namespace SinoCloudWisdomBarCodeGenerator
             CreateBarCode(content);
             textBox.Text = "";
 
+        }
+
+        private void myTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            myListView.Items.Insert(0, e.Text);
+            if(e.Text != "\n" && e.Text != "\r")
+            {
+                return;
+            }
+
+            var textBox = sender as TextBox;
+            string content = textBox.Text;
+            if (content.Length == 0)
+            {
+                return;
+            }
+
+            myListBox.Items.Insert(0, content);
+            CreateBarCode(content);
+            textBox.Text = "";
         }
     }
 }
