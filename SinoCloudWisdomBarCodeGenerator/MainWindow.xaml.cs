@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using BarCodeExample;
+using QRCoder;
 
 namespace SinoCloudWisdomBarCodeGenerator
 {
@@ -21,6 +22,9 @@ namespace SinoCloudWisdomBarCodeGenerator
     /// </summary>
     public partial class MainWindow : Window
     {
+        //[System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        //public static extern bool DeleteObject(IntPtr hObject);
+
         const int len = 13;
        public MainWindow()
         {
@@ -105,6 +109,55 @@ namespace SinoCloudWisdomBarCodeGenerator
            myCanvas.Children.Add(block);
        }
 
+		public static BitmapSource ToBitmapSource( System.Drawing.Bitmap src)
+		{
+			if (src == null)
+			{
+				return null;
+			}
+			return System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(src.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+		}
+       private void RenderQrCode(string content, string iconImgPath, int iconSize = 6, string level = "M")
+       {
+           QRCodeGenerator.ECCLevel eccLevel = (QRCodeGenerator.ECCLevel)(level == "L" ? 0 : level == "M" ? 1 : level == "Q" ? 2 : 3);
+           using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
+           {
+               using (QRCodeData qrCodeData = qrGenerator.CreateQrCode(content, eccLevel))
+               {
+                   using (QRCode qrCode = new QRCode(qrCodeData))
+                   {
+                       System.Drawing.Bitmap imgIcon = null;
+                       if (iconImgPath.Length > 0)
+                       {
+                           try
+                           {
+                               imgIcon = new  System.Drawing.Bitmap(iconImgPath);
+                           }
+                           catch (Exception)
+                           {
+                           }
+                       }
+
+                       System.Drawing.Bitmap m_Bitmap = qrCode.GetGraphic(20, System.Drawing.Color.Black, System.Drawing.Color.White,
+                           imgIcon, iconSize);
+                       //IntPtr ip = m_Bitmap.GetHbitmap();
+                       //BitmapSource bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                       //    ip, IntPtr.Zero, Int32Rect.Empty,
+                       //    System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                       //DeleteObject(ip);
+                       //myImage.Source = bitmapSource;
+                       myImage.Source = ToBitmapSource(m_Bitmap);
+
+                       //this.pictureBoxQRCode.Size = new System.Drawing.Size(pictureBoxQRCode.Width, pictureBoxQRCode.Height);
+                       ////Set the SizeMode to center the image.
+                       //this.pictureBoxQRCode.SizeMode = PictureBoxSizeMode.CenterImage;
+
+                       //pictureBoxQRCode.SizeMode = PictureBoxSizeMode.StretchImage;
+                   }
+               }
+           }
+       }
+
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
             //myListView.Items.Add(e.Key.ToString()+"\t" + e.SystemKey.ToString() + "\t"+e.ToString());
@@ -140,7 +193,7 @@ namespace SinoCloudWisdomBarCodeGenerator
             {
                 return;
             }
-
+            RenderQrCode(content, "./logo.png", 6, "M");
             myListBox.Items.Insert(0, content);
             CreateBarCode(content);
             textBox.Text = "";

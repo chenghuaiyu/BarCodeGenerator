@@ -15,7 +15,6 @@
         </Grid.ColumnDefinitions>
         <Label Content="Label" HorizontalAlignment="Left" Margin="26,19,0,0" VerticalAlignment="Top" Height="22" Width="120" Grid.Column="1"/>
         <TextBox x:Name="myTextBox" HorizontalAlignment="Left" Height="23" Margin="28,55,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="326" Grid.Column="1" KeyDown="TextBox_KeyDown" AllowDrop="True" PreviewTextInput="myTextBox_PreviewTextInput"/>
-        <Image HorizontalAlignment="Left" Height="199" Margin="484,56,0,0" VerticalAlignment="Top" Width="227" Grid.Column="1" Grid.RowSpan="2"/>
         <ListBox x:Name="myListBox" HorizontalAlignment="Left" Height="386" Margin="23,33,0,0" Grid.Row="1" VerticalAlignment="Top" Width="255" Grid.Column="1"/>
         <ListView x:Name="myListView" HorizontalAlignment="Left" Height="489" Margin="301,33,0,0" Grid.Row="1" VerticalAlignment="Top" Width="224" Grid.Column="1">
             <ListView.View>
@@ -24,7 +23,8 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Canvas x:Name="myCanvas" Grid.ColumnSpan="2" HorizontalAlignment="Left" Height="189" Margin="469,132,0,0" VerticalAlignment="Top" Width="660" Grid.Row="1"/>
+        <Image x:Name="myImage" HorizontalAlignment="Left" Height="383" Margin="543,55,0,0" VerticalAlignment="Top" Width="586" Grid.Column="1" Grid.RowSpan="2"/>
+        <Canvas x:Name="myCanvas" Grid.ColumnSpan="2" HorizontalAlignment="Left" Height="189" Margin="560,347,0,0" VerticalAlignment="Top" Width="569" Grid.Row="1"/>
 
     </Grid>
 </Window>

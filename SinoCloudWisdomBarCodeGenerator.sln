@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SinoCloudWisdomBarCodeGenerator", "SinoCloudWisdomBarCodeGenerator\SinoCloudWisdomBarCodeGenerator.csproj", "{88AE585B-CD93-4476-B5EB-B1FF450FA1E0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AECE5DF3-C379-46CA-BB7D-7BDBE59011FD} = {AECE5DF3-C379-46CA-BB7D-7BDBE59011FD}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QRCoder", "QRCoder\QRCoder.csproj", "{AECE5DF3-C379-46CA-BB7D-7BDBE59011FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +20,10 @@ Global
 		{88AE585B-CD93-4476-B5EB-B1FF450FA1E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88AE585B-CD93-4476-B5EB-B1FF450FA1E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88AE585B-CD93-4476-B5EB-B1FF450FA1E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AECE5DF3-C379-46CA-BB7D-7BDBE59011FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AECE5DF3-C379-46CA-BB7D-7BDBE59011FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AECE5DF3-C379-46CA-BB7D-7BDBE59011FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AECE5DF3-C379-46CA-BB7D-7BDBE59011FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
