@@ -183,9 +183,14 @@ namespace SinoCloudWisdomBarCodeGenerator
                 return;
             }
 
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
             System.Drawing.Bitmap logo = SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
             RenderQrCode(content, logo, 10, "M");
             myListBox.Items.Insert(0, content);
+            sw.Stop();
+            myListView.Items.Insert(0, sw.Elapsed.ToString());
+
             CreateBarCode(content);
             textBox.Text = "";
         }
