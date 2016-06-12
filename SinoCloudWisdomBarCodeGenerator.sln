@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio 2015
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 12.0.40629.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SinoCloudWisdomBarCodeGenerator", "SinoCloudWisdomBarCodeGenerator\SinoCloudWisdomBarCodeGenerator.csproj", "{88AE585B-CD93-4476-B5EB-B1FF450FA1E0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{AECE5DF3-C379-46CA-BB7D-7BDBE59011FD} = {AECE5DF3-C379-46CA-BB7D-7BDBE59011FD}

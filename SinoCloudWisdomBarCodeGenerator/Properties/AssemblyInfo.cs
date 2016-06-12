@@ -8,12 +8,12 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SinoCloudWisdomBarCodeGenerator")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("bar code scanner and then generate qr code")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("中云智慧（北京）科技有限公司")]
 [assembly: AssemblyProduct("SinoCloudWisdomBarCodeGenerator")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCopyright("Copyright © 中云智慧（北京）科技有限公司 2016")]
+[assembly: AssemblyTrademark("written by chenghuaiyu@sina.com")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
