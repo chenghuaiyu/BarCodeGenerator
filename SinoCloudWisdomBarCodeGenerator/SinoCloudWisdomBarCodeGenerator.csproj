@@ -38,6 +38,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -103,6 +104,10 @@
     <ProjectReference Include="..\QRCoder\QRCoder.csproj">
       <Project>{aece5df3-c379-46ca-bb7d-7bdbe59011fd}</Project>
       <Name>QRCoder</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WindowsInput\WindowsInput.csproj">
+      <Project>{3549cd6f-80f8-450f-b99e-cf0a736b1f2a}</Project>
+      <Name>WindowsInput</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

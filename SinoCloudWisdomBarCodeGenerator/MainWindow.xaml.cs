@@ -14,6 +14,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using BarCodeExample;
 using QRCoder;
+using System.Windows.Threading;
+using WindowsInput;
+using WindowsInput.Native;
 
 namespace SinoCloudWisdomBarCodeGenerator
 {
@@ -26,9 +29,17 @@ namespace SinoCloudWisdomBarCodeGenerator
         //public static extern bool DeleteObject(IntPtr hObject);
 
         const int len = 13;
+        DispatcherTimer dispatcherTimer;
+        const string logFilename = "log_scw_barcode.txt";
         public MainWindow()
         {
             InitializeComponent();
+            
+            dispatcherTimer = new DispatcherTimer();
+            dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
+            
+            myLabel.Content += new System.IO.FileInfo(logFilename).FullName;
         }
 
         //Encode Data to create Barcode
@@ -146,26 +157,46 @@ namespace SinoCloudWisdomBarCodeGenerator
                 }
             }
         }
-
-        private void TextBox_KeyDown(object sender, KeyEventArgs e)
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
-            //myListView.Items.Add(e.Key.ToString()+"\t" + e.SystemKey.ToString() + "\t"+e.ToString());
-            if (e.Key != System.Windows.Input.Key.Enter)
-            //    if (e.Key > System.Windows.Input.Key.D0 && e.Key < System.Windows.Input.Key.Z)
-            //{
-            //    return;
-            //}
-            //    if (e.Key == System.Windows.Input.Key.System && e.SystemKey == System.Windows.Input.Key.LeftAlt)
+            var sim = new InputSimulator();
+
+            Random rand = new Random((int)DateTime.Now.Ticks);
+            int n = 13;
+            while (n-- > 0)
             {
-                return;
+                int key = rand.Next(36);
+                char ch;
+                if (key < 10)
+                {
+                    ch = (char)('0' + key);
+                }
+                else
+                {
+                    ch = (char)('a' + key - 10);
+                }
+                sim.Keyboard.TextEntry(ch.ToString());
+            }
+            sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+        }
+
+        private void myCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void myCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+            if ((bool)checkBox.IsChecked)
+            {
+                dispatcherTimer.Start();
+            }
+            else
+            {
+                dispatcherTimer.Stop();
             }
 
-            var textBox = sender as TextBox;
-            string content = textBox.Text;
-            myListBox.Items.Insert(0, content);
-            CreateBarCode(content);
-            textBox.Text = "";
-
+            myTextBox.Focus();
         }
 
         private void myTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -190,9 +221,14 @@ namespace SinoCloudWisdomBarCodeGenerator
             myListBox.Items.Insert(0, content);
             sw.Stop();
             myListView.Items.Insert(0, sw.Elapsed.ToString());
+            myListView.Items.Insert(0, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ffff", System.Globalization.DateTimeFormatInfo.InvariantInfo));
 
             CreateBarCode(content);
             textBox.Text = "";
+
+            System.IO.StreamWriter writer = System.IO.File.AppendText(logFilename);
+            writer.WriteLine(content);
+            writer.Close();
         }
     }
 }

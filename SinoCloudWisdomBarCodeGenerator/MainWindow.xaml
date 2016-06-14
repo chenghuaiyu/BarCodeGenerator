@@ -13,10 +13,10 @@
             <ColumnDefinition Width="0*"/>
             <ColumnDefinition Width="0*"/>
         </Grid.ColumnDefinitions>
-        <Label Content="content:" HorizontalAlignment="Left" Margin="26,19,0,0" VerticalAlignment="Top" Height="22" Width="120" Grid.Column="1"/>
-        <TextBox x:Name="myTextBox" HorizontalAlignment="Left" Height="23" Margin="28,55,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="326" Grid.Column="1" KeyDown="TextBox_KeyDown" AllowDrop="True" PreviewTextInput="myTextBox_PreviewTextInput"/>
-        <ListBox x:Name="myListBox" HorizontalAlignment="Left" Height="592" Margin="23,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="251" Grid.Column="1"/>
-        <ListView x:Name="myListView" HorizontalAlignment="Left" Height="592" Margin="301,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="140" Grid.Column="1">
+        <Label x:Name="myLabel" Content="log file: " HorizontalAlignment="Left" Margin="26,10,0,0" VerticalAlignment="Top" Height="31" Width="800" Grid.Column="1"/>
+        <TextBox x:Name="myTextBox" HorizontalAlignment="Left" Height="23" Margin="28,55,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="326" Grid.Column="1" AllowDrop="True" PreviewTextInput="myTextBox_PreviewTextInput"/>
+        <ListBox x:Name="myListBox" HorizontalAlignment="Left" Height="592" Margin="23,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="216" Grid.Column="1"/>
+        <ListView x:Name="myListView" HorizontalAlignment="Left" Height="592" Margin="244,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="197" Grid.Column="1">
             <ListView.View>
                 <GridView>
                     <GridViewColumn/>
@@ -25,6 +25,7 @@
         </ListView>
         <Image x:Name="myImage" HorizontalAlignment="Left" Height="433" Margin="485,55,0,0" VerticalAlignment="Top" Width="496" Grid.Column="1" Grid.RowSpan="2"/>
         <Canvas x:Name="myCanvas" Grid.ColumnSpan="2" HorizontalAlignment="Left" Height="147" Margin="468,455,0,0" VerticalAlignment="Top" Width="513" Grid.Row="1"/>
+        <CheckBox x:Name="myCheckBox" Grid.ColumnSpan="2" Content="Simulate" HorizontalAlignment="Left" Margin="375,63,0,0" VerticalAlignment="Top" Checked="myCheckBox_Checked" Click="myCheckBox_Click"/>
 
     </Grid>
 </Window>
