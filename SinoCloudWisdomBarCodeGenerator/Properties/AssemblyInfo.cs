@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("中云智慧（北京）科技有限公司")]
 [assembly: AssemblyProduct("SinoCloudWisdomBarCodeGenerator")]
-[assembly: AssemblyCopyright("Copyright © 中云智慧（北京）科技有限公司 2016")]
+[assembly: AssemblyCopyright("Copyright © 2016 中云智慧（北京）科技有限公司")]
 [assembly: AssemblyTrademark("written by chenghuaiyu@sina.com")]
 [assembly: AssemblyCulture("")]
 
@@ -53,3 +53,5 @@ using System.Windows;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: Guid("3a6b1de2-d418-4786-b655-3d84cef315a2")]
+
