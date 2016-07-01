@@ -17,6 +17,9 @@ using QRCoder;
 using System.Windows.Threading;
 using WindowsInput;
 using WindowsInput.Native;
+using System.Net;
+using System.IO;
+using System.Configuration;
 
 namespace SinoCloudWisdomBarCodeGenerator
 {
@@ -31,15 +34,44 @@ namespace SinoCloudWisdomBarCodeGenerator
         const int len = 13;
         DispatcherTimer dispatcherTimer;
         const string logFilename = "log_scw_barcode.txt";
+        string serverUrlKey = "TransferURL";
+        string transferSwitchKey = "TransferSwitch";
+        bool transferSwitch;
+        string serverUrl = "";
+        string barcode;
+        const string barcodeFlagSwitch0 = "-0";
+        const string barcodeFlagSwitch1 = "-1";
+        string barcodeFlag;
         public MainWindow()
         {
             InitializeComponent();
-            
-            dispatcherTimer = new DispatcherTimer();
-            dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
-            dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
-            
+            myCheckBox.Visibility = Visibility.Hidden;
+#if DEBUG
+            myCheckBox.Visibility = Visibility.Visible;
+            myCheckBox.IsEnabled = true;
+#endif
+            if (myCheckBox.IsEnabled)
+            {
+                dispatcherTimer = new DispatcherTimer();
+                dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+                dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
+            }
+
             myLabel.Content += new System.IO.FileInfo(logFilename).FullName;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            transferSwitch = "true" == ConfigurationManager.AppSettings[transferSwitchKey];
+            if (transferSwitch)
+            {
+                serverUrl = ConfigurationManager.AppSettings[serverUrlKey];
+                if (string.IsNullOrEmpty(serverUrl))
+                {
+                    MessageBox.Show(serverUrlKey + " not found in configuration.\r\nprogram will exit.");
+                    Application.Current.Shutdown();
+                }
+            }
         }
 
         //Encode Data to create Barcode
@@ -129,6 +161,7 @@ namespace SinoCloudWisdomBarCodeGenerator
             }
             return System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(src.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
         }
+
         private void RenderQrCode(string content, System.Drawing.Bitmap imgIcon, int iconSize = 6, string level = "M")
         {
             QRCodeGenerator.ECCLevel eccLevel = (QRCodeGenerator.ECCLevel)(level == "L" ? 0 : level == "M" ? 1 : level == "Q" ? 2 : 3);
@@ -157,6 +190,7 @@ namespace SinoCloudWisdomBarCodeGenerator
                 }
             }
         }
+
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
             var sim = new InputSimulator();
@@ -199,6 +233,76 @@ namespace SinoCloudWisdomBarCodeGenerator
             myTextBox.Focus();
         }
 
+        private void post2Url(string postUrl, string content, Encoding dataEncode)
+        {
+            try
+            {
+                HttpWebRequest webReq = (HttpWebRequest)WebRequest.Create(new Uri(postUrl));
+                webReq.Method = "POST";
+                webReq.ContentType = "application/x-www-form-urlencoded";
+                byte[] byteArray = dataEncode.GetBytes(content); //转化
+                webReq.ContentLength = byteArray.Length;
+                System.IO.Stream newStream = webReq.GetRequestStream();
+                newStream.Write(byteArray, 0, byteArray.Length);//写入参数
+                newStream.Close();
+                HttpWebResponse response = (HttpWebResponse)webReq.GetResponse();
+
+                StreamReader sr = new StreamReader(response.GetResponseStream(), Encoding.Default);
+                string ret = sr.ReadToEnd();
+                sr.Close();
+                response.Close();
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+            //System.Net.HttpWebRequest request = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(postUrl);
+            //request.Method = "POST";
+            //System.Net.HttpWebResponse response =(HttpWebResponse)request.GetResponse();
+            //if (response != null && response.StatusCode == HttpStatusCode.OK)
+            //{
+            //    using (StreamReader sr = new StreamReader(cnblogsRespone.GetResponseStream()))
+            //    {
+            //        html = sr.ReadToEnd();
+            //    }
+            //}
+            //return ;
+        }
+
+        private void get2Url(string url)
+        {
+            try
+            {
+                HttpWebRequest webReq = (HttpWebRequest)WebRequest.Create(new Uri(url));
+                webReq.Method = "GET";
+                HttpWebResponse response = (HttpWebResponse)webReq.GetResponse();
+
+                StreamReader sr = new StreamReader(response.GetResponseStream(), Encoding.Default);
+                string ret = sr.ReadToEnd();
+                sr.Close();
+                response.Close();
+            }
+            catch (System.Exception ex)
+            {
+#if DEBUG
+                MessageBox.Show(ex.Message + "  \r\n\t" + url);
+#endif
+            }
+
+            //System.Net.HttpWebRequest request = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(postUrl);
+            //request.Method = "POST";
+            //System.Net.HttpWebResponse response =(HttpWebResponse)request.GetResponse();
+            //if (response != null && response.StatusCode == HttpStatusCode.OK)
+            //{
+            //    using (StreamReader sr = new StreamReader(cnblogsRespone.GetResponseStream()))
+            //    {
+            //        html = sr.ReadToEnd();
+            //    }
+            //}
+            //return ;
+        }
+
         private void myTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             myListView.Items.Insert(0, e.Text);
@@ -214,6 +318,23 @@ namespace SinoCloudWisdomBarCodeGenerator
                 return;
             }
 
+            if (string.IsNullOrEmpty(barcode) || content != barcode)
+            {
+                barcodeFlag = barcodeFlagSwitch0;
+            }
+            else
+            {
+                if (barcodeFlag == barcodeFlagSwitch1)
+                {
+                    barcodeFlag = barcodeFlagSwitch0;
+                }
+                else
+                {
+                    barcodeFlag = barcodeFlagSwitch1;
+                }
+            }
+            barcode = content;
+            content += barcodeFlag;
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             System.Drawing.Bitmap logo = SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
@@ -229,6 +350,11 @@ namespace SinoCloudWisdomBarCodeGenerator
             System.IO.StreamWriter writer = System.IO.File.AppendText(logFilename);
             writer.WriteLine(content);
             writer.Close();
+            if (transferSwitch)
+            {
+                get2Url(serverUrl + "?barcode=" + barcode);
+                //post2Url(serverUrl, "barcode=" + barcode, Encoding.UTF8);
+            }
         }
     }
 }
