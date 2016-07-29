@@ -23,19 +23,21 @@ using System.Configuration;
 
 namespace SinoCloudWisdomBarCodeGenerator
 {
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        //[System.Runtime.InteropServices.DllImport("gdi32.dll")]
-        //public static extern bool DeleteObject(IntPtr hObject);
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        public static extern bool DeleteObject(IntPtr hObject);
 
-        const int len = 13;
+        int[] range = { 26, 26, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 26, 26 };
         DispatcherTimer dispatcherTimer;
-        const string logFilename = "log_scw_barcode.txt";
+        const string logFilename = "scw_barcode.log";
         string serverUrlKey = "TransferURL";
         string transferSwitchKey = "TransferSwitch";
+        string timerIntervalKey = "TimerInterval";
         bool transferSwitch;
         string serverUrl = "";
         string barcode;
@@ -54,6 +56,12 @@ namespace SinoCloudWisdomBarCodeGenerator
             {
                 dispatcherTimer = new DispatcherTimer();
                 dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+                int timerInterval;
+                int.TryParse(ConfigurationManager.AppSettings[timerIntervalKey], out timerInterval);
+                if (0 >= timerInterval)
+                {
+                    timerInterval = 1;
+                }
                 dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
             }
 
@@ -74,92 +82,17 @@ namespace SinoCloudWisdomBarCodeGenerator
             }
         }
 
-        //Encode Data to create Barcode
-        private void CreateBarCode(string productCode)
-        {
-            ////////////////////////////////////////////
-            // Encode The Code with the help of Encoder 
-            ///////////////////////////////////////////
-            Barcodes barCode = new Barcodes();
-            barCode.BarcodeType = Barcodes.BarcodeEnum.Encoder;
-            barCode.Data = productCode;
-            barCode.CheckDigit = Barcodes.YesNoEnum.No;
-            barCode.encode();
-
-            //Dimensions of the Bars, you can use according to your need
-            int thinWidth;
-            int thickWidth;
-            thinWidth = 2;
-            thickWidth = 3 * thinWidth;
-
-            string encodedText = barCode.EncodedData; //Encoded product code
-            string humanText = barCode.HumanText; //Human readable product code
-
-            /////////////////////////////////////
-            // Draw The Barcode
-            /////////////////////////////////////
-            int length = encodedText.Length;
-            int currentPos = 10;
-            int currentTop = 10;
-            int currentColor = 0;
-            int height = 100;
-            myCanvas.Children.Clear();
-            for (int i = 0; i < length; i++)
-            {
-                Rectangle rectangle = new Rectangle(); //Create a rectangle which will form as Barcode
-                rectangle.Height = height;
-
-                if (currentColor == 0)
-                {
-                    currentColor = 1;
-                    rectangle.Fill = new SolidColorBrush(Colors.Black);
-                }
-                else
-                {
-                    currentColor = 0;
-                    rectangle.Fill = new SolidColorBrush(Colors.White);
-                }
-
-                Canvas.SetLeft(rectangle, currentPos);
-                Canvas.SetTop(rectangle, currentTop);
-
-                if (encodedText[i] == 't')
-                {
-                    rectangle.Width = thinWidth;
-                    currentPos += thinWidth;
-                }
-                else if (encodedText[i] == 'w')
-                {
-                    rectangle.Width = thickWidth;
-                    currentPos += thickWidth;
-                }
-
-                //Bind Barcode to XAML Canvas 
-                myCanvas.Children.Add(rectangle);
-            }
-
-
-            ////////////////////////////////////////////////
-            // Add the Human Readable Text and its alignment
-            ///////////////////////////////////////////////
-            TextBlock block = new TextBlock(); //WPF Text Block
-            block.Text = humanText; //Set human readable product code
-            block.FontSize = 32;
-            block.FontFamily = new FontFamily("Courier New");
-            Rect rect = new Rect(0, 0, 0, 0);
-            block.Arrange(rect);
-            Canvas.SetLeft(block, (currentPos - block.ActualWidth) / 2);
-            Canvas.SetTop(block, currentTop + height + 5);
-            myCanvas.Children.Add(block);
-        }
-
         public static BitmapSource ToBitmapSource(System.Drawing.Bitmap src)
         {
             if (src == null)
             {
                 return null;
             }
-            return System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(src.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            IntPtr ip = src.GetHbitmap();
+            BitmapSource bs = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(ip, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            DeleteObject(ip);//释放对象
+
+            return bs;
         }
 
         private void RenderQrCode(string content, System.Drawing.Bitmap imgIcon, int iconSize = 6, string level = "M")
@@ -196,18 +129,20 @@ namespace SinoCloudWisdomBarCodeGenerator
             var sim = new InputSimulator();
 
             Random rand = new Random((int)DateTime.Now.Ticks);
-            int n = 13;
-            while (n-- > 0)
+            int n = range.Length;
+            int i = 0;
+            while (i < n)
             {
-                int key = rand.Next(36);
+                int maxVal = range[i++];
+                int key = rand.Next(maxVal);
                 char ch;
-                if (key < 10)
+                if (maxVal == 10)
                 {
                     ch = (char)('0' + key);
                 }
                 else
                 {
-                    ch = (char)('a' + key - 10);
+                    ch = (char)('a' + key);
                 }
                 sim.Keyboard.TextEntry(ch.ToString());
             }
@@ -305,7 +240,8 @@ namespace SinoCloudWisdomBarCodeGenerator
 
         private void myTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            myListView.Items.Insert(0, e.Text);
+            myListView.Items.Clear();
+            //myListView.Items.Insert(0, e.Text);
             if (e.Text != "\n" && e.Text != "\r")
             {
                 return;
@@ -338,13 +274,16 @@ namespace SinoCloudWisdomBarCodeGenerator
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             System.Drawing.Bitmap logo = SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
-            RenderQrCode(content, logo, 10, "M");
+            RenderQrCode(content, logo, 10, "Q");
+            if (myListBox.Items.Count >= 1000)
+            {
+                myListBox.Items.Clear();
+            }
             myListBox.Items.Insert(0, content);
             sw.Stop();
             myListView.Items.Insert(0, sw.Elapsed.ToString());
             myListView.Items.Insert(0, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:ffff", System.Globalization.DateTimeFormatInfo.InvariantInfo));
 
-            CreateBarCode(content);
             textBox.Text = "";
 
             System.IO.StreamWriter writer = System.IO.File.AppendText(logFilename);
