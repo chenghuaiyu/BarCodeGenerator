@@ -20,6 +20,8 @@ using WindowsInput.Native;
 using System.Net;
 using System.IO;
 using System.Configuration;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace SinoCloudWisdomBarCodeGenerator
 {
@@ -31,6 +33,12 @@ namespace SinoCloudWisdomBarCodeGenerator
     {
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]
         public static extern bool DeleteObject(IntPtr hObject);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, out uint ProcessId);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
 
         int[] range = { 26, 26, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 26, 26 };
         DispatcherTimer dispatcherTimer;
@@ -44,6 +52,10 @@ namespace SinoCloudWisdomBarCodeGenerator
         const string barcodeFlagSwitch0 = "-0";
         const string barcodeFlagSwitch1 = "-1";
         string barcodeFlag;
+#if DEBUG
+        int ImgFileInd = 0;
+#endif
+
         public MainWindow()
         {
             InitializeComponent();
@@ -95,6 +107,23 @@ namespace SinoCloudWisdomBarCodeGenerator
             return bs;
         }
 
+        public static Bitmap ToBitmap(BitmapSource src)
+        {
+            if (src == null)
+            {
+                return null;
+            }
+            int width = src.PixelWidth;
+            int height = src.PixelHeight;
+            Bitmap result = new Bitmap(width, height);
+            BitmapData bits = result.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            int size = width * height * 4;
+            byte[] argb = new byte[size];
+            src.CopyPixels(argb, bits.Stride, 0);
+            System.Runtime.InteropServices.Marshal.Copy(argb, 0, bits.Scan0, size);
+            return result;
+        }
+
         private void RenderQrCode(string content, System.Drawing.Bitmap imgIcon, int iconSize = 6, string level = "M")
         {
             QRCodeGenerator.ECCLevel eccLevel = (QRCodeGenerator.ECCLevel)(level == "L" ? 0 : level == "M" ? 1 : level == "Q" ? 2 : 3);
@@ -124,8 +153,24 @@ namespace SinoCloudWisdomBarCodeGenerator
             }
         }
 
+        System.Diagnostics.Process GetActiveProcess()
+        {
+            IntPtr hwnd = GetForegroundWindow();
+            uint pid;
+            GetWindowThreadProcessId(hwnd, out pid);
+            System.Diagnostics.Process p = System.Diagnostics.Process.GetProcessById((int)pid);
+            return p;
+        }
+
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
+            var currentProc = System.Diagnostics.Process.GetCurrentProcess();
+            var activeProc = GetActiveProcess();
+            if (currentProc.Id != activeProc.Id)
+            {
+                return;
+            }
+
             var sim = new InputSimulator();
 
             Random rand = new Random((int)DateTime.Now.Ticks);
@@ -273,8 +318,21 @@ namespace SinoCloudWisdomBarCodeGenerator
             content += barcodeFlag;
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            System.Drawing.Bitmap logo = SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
-            RenderQrCode(content, logo, 10, "Q");
+            System.Drawing.Bitmap logo = null;// SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
+            //RenderQrCode(content, logo, 6, "H");
+            RenderQrCode(content, logo, 10, "H");
+#if DEBUG
+            Type t = myImage.Source.GetType();
+            Bitmap bm = ToBitmap((myImage.Source as BitmapSource));
+            string ImgDir = "barcodeImage";
+            if (!Directory.Exists(ImgDir))
+            {
+                Directory.CreateDirectory(ImgDir);
+            }
+            bm.Save(System.IO.Path.Combine(ImgDir, ImgFileInd.ToString("D5") + "-" + content + ".png"));
+            ImgFileInd++;
+#endif
+
             if (myListBox.Items.Count >= 1000)
             {
                 myListBox.Items.Clear();
