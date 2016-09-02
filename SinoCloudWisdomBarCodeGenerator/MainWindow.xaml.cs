@@ -40,7 +40,7 @@ namespace SinoCloudWisdomBarCodeGenerator
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
 
-        int[] range = { 26, 26, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 26, 26 };
+        int[] range = { 26, 26, 10, 10, 10, 10, 10, 10, 10, 10, 10, 26, 26 };
         DispatcherTimer dispatcherTimer;
         const string logFilename = "scw_barcode.log";
         string serverUrlKey = "TransferURL";
@@ -54,6 +54,14 @@ namespace SinoCloudWisdomBarCodeGenerator
         string barcodeFlag;
 #if DEBUG
         int ImgFileInd = 0;
+
+        public void WorkThreadFunction()
+        {
+            batchGenerateQRImage("image-L", QRCodeGenerator.ECCLevel.L); ImgFileInd = 0;
+            batchGenerateQRImage("image-M", QRCodeGenerator.ECCLevel.M); ImgFileInd = 0;
+            batchGenerateQRImage("image-Q", QRCodeGenerator.ECCLevel.Q); ImgFileInd = 0;
+            batchGenerateQRImage("image-H", QRCodeGenerator.ECCLevel.H); ImgFileInd = 0;
+        }
 #endif
 
         public MainWindow()
@@ -63,6 +71,10 @@ namespace SinoCloudWisdomBarCodeGenerator
 #if DEBUG
             myCheckBox.Visibility = Visibility.Visible;
             myCheckBox.IsEnabled = true;
+
+            //generateQRImage("ee5174665187vh-0", ".", QRCodeGenerator.ECCLevel.Q, null, false, true);
+            //System.Threading.Thread thread = new System.Threading.Thread(new System.Threading.ThreadStart(WorkThreadFunction));
+            //thread.Start();
 #endif
             if (myCheckBox.IsEnabled)
             {
@@ -124,33 +136,11 @@ namespace SinoCloudWisdomBarCodeGenerator
             return result;
         }
 
-        private void RenderQrCode(string content, System.Drawing.Bitmap imgIcon, int iconSize = 6, string level = "M")
+        private QRCode GetQrCode(string content, QRCodeGenerator.ECCLevel eccLevel, bool forceUtf8 = false, bool utf8BOM = false)
         {
-            QRCodeGenerator.ECCLevel eccLevel = (QRCodeGenerator.ECCLevel)(level == "L" ? 0 : level == "M" ? 1 : level == "Q" ? 2 : 3);
-            using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
-            {
-                using (QRCodeData qrCodeData = qrGenerator.CreateQrCode(content, eccLevel))
-                {
-                    using (QRCode qrCode = new QRCode(qrCodeData))
-                    {
-                        System.Drawing.Bitmap m_Bitmap = qrCode.GetGraphic(20, System.Drawing.Color.Black, System.Drawing.Color.White,
-                            imgIcon, iconSize);
-                        //IntPtr ip = m_Bitmap.GetHbitmap();
-                        //BitmapSource bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
-                        //    ip, IntPtr.Zero, Int32Rect.Empty,
-                        //    System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
-                        //DeleteObject(ip);
-                        //myImage.Source = bitmapSource;
-                        myImage.Source = ToBitmapSource(m_Bitmap);
-
-                        //this.pictureBoxQRCode.Size = new System.Drawing.Size(pictureBoxQRCode.Width, pictureBoxQRCode.Height);
-                        ////Set the SizeMode to center the image.
-                        //this.pictureBoxQRCode.SizeMode = PictureBoxSizeMode.CenterImage;
-
-                        //pictureBoxQRCode.SizeMode = PictureBoxSizeMode.StretchImage;
-                    }
-                }
-            }
+            QRCodeGenerator qrGenerator = new QRCodeGenerator();
+            QRCodeData qrCodeData = qrGenerator.CreateQrCode(content, eccLevel, forceUtf8, utf8BOM);
+            return new QRCode(qrCodeData);
         }
 
         System.Diagnostics.Process GetActiveProcess()
@@ -162,17 +152,9 @@ namespace SinoCloudWisdomBarCodeGenerator
             return p;
         }
 
-        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        private string getRandom(int[] range)
         {
-            var currentProc = System.Diagnostics.Process.GetCurrentProcess();
-            var activeProc = GetActiveProcess();
-            if (currentProc.Id != activeProc.Id)
-            {
-                return;
-            }
-
-            var sim = new InputSimulator();
-
+            string content = "";
             Random rand = new Random((int)DateTime.Now.Ticks);
             int n = range.Length;
             int i = 0;
@@ -187,10 +169,26 @@ namespace SinoCloudWisdomBarCodeGenerator
                 }
                 else
                 {
-                    ch = (char)('a' + key);
+                    ch = (char)('A' + key);
                 }
-                sim.Keyboard.TextEntry(ch.ToString());
+                content += ch;
             }
+
+            return content;
+        }
+
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            var currentProc = System.Diagnostics.Process.GetCurrentProcess();
+            var activeProc = GetActiveProcess();
+            if (currentProc.Id != activeProc.Id)
+            {
+                return;
+            }
+
+            string content = getRandom(range);
+            var sim = new InputSimulator();
+            sim.Keyboard.TextEntry(content);
             sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
         }
 
@@ -220,7 +218,7 @@ namespace SinoCloudWisdomBarCodeGenerator
                 HttpWebRequest webReq = (HttpWebRequest)WebRequest.Create(new Uri(postUrl));
                 webReq.Method = "POST";
                 webReq.ContentType = "application/x-www-form-urlencoded";
-                byte[] byteArray = dataEncode.GetBytes(content); //转化
+                byte[] byteArray = dataEncode.GetBytes(content);
                 webReq.ContentLength = byteArray.Length;
                 System.IO.Stream newStream = webReq.GetRequestStream();
                 newStream.Write(byteArray, 0, byteArray.Length);//写入参数
@@ -236,18 +234,6 @@ namespace SinoCloudWisdomBarCodeGenerator
             {
                 MessageBox.Show(ex.Message);
             }
-
-            //System.Net.HttpWebRequest request = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(postUrl);
-            //request.Method = "POST";
-            //System.Net.HttpWebResponse response =(HttpWebResponse)request.GetResponse();
-            //if (response != null && response.StatusCode == HttpStatusCode.OK)
-            //{
-            //    using (StreamReader sr = new StreamReader(cnblogsRespone.GetResponseStream()))
-            //    {
-            //        html = sr.ReadToEnd();
-            //    }
-            //}
-            //return ;
         }
 
         private void get2Url(string url)
@@ -269,18 +255,6 @@ namespace SinoCloudWisdomBarCodeGenerator
                 MessageBox.Show(ex.Message + "  \r\n\t" + url);
 #endif
             }
-
-            //System.Net.HttpWebRequest request = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(postUrl);
-            //request.Method = "POST";
-            //System.Net.HttpWebResponse response =(HttpWebResponse)request.GetResponse();
-            //if (response != null && response.StatusCode == HttpStatusCode.OK)
-            //{
-            //    using (StreamReader sr = new StreamReader(cnblogsRespone.GetResponseStream()))
-            //    {
-            //        html = sr.ReadToEnd();
-            //    }
-            //}
-            //return ;
         }
 
         private void myTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -318,19 +292,18 @@ namespace SinoCloudWisdomBarCodeGenerator
             content += barcodeFlag;
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            System.Drawing.Bitmap logo = null;// SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
-            //RenderQrCode(content, logo, 6, "H");
-            RenderQrCode(content, logo, 10, "H");
+            System.Drawing.Bitmap logo = SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
+            QRCode qrCode = GetQrCode(content, QRCodeGenerator.ECCLevel.H, false, true);
+            System.Drawing.Bitmap m_Bitmap = qrCode.GetGraphic(20, System.Drawing.Color.Black, System.Drawing.Color.White, logo, 6, 6, true);
+            myImage.Source = ToBitmapSource(m_Bitmap);
 #if DEBUG
-            Type t = myImage.Source.GetType();
-            Bitmap bm = ToBitmap((myImage.Source as BitmapSource));
             string ImgDir = "barcodeImage";
             if (!Directory.Exists(ImgDir))
             {
                 Directory.CreateDirectory(ImgDir);
             }
-            bm.Save(System.IO.Path.Combine(ImgDir, ImgFileInd.ToString("D5") + "-" + content + ".png"));
             ImgFileInd++;
+            m_Bitmap.Save(System.IO.Path.Combine(ImgDir, ImgFileInd.ToString("D5") + "-" + content + ".png"));
 #endif
 
             if (myListBox.Items.Count >= 1000)
@@ -353,5 +326,31 @@ namespace SinoCloudWisdomBarCodeGenerator
                 //post2Url(serverUrl, "barcode=" + barcode, Encoding.UTF8);
             }
         }
+
+#if DEBUG
+        private void generateQRImage(string content, string ImgDir, QRCodeGenerator.ECCLevel eccLevel, System.Drawing.Bitmap logo = null, bool forceUtf8 = false, bool utf8BOM = false)
+        {
+            QRCode qrCode = GetQrCode(content, eccLevel, forceUtf8, forceUtf8);
+            System.Drawing.Bitmap m_Bitmap = qrCode.GetGraphic(10, System.Drawing.Color.Black, System.Drawing.Color.White, logo, 6, 6, true);
+            if (!Directory.Exists(ImgDir))
+            {
+                Directory.CreateDirectory(ImgDir);
+            }
+            ImgFileInd++;
+            m_Bitmap.Save(System.IO.Path.Combine(ImgDir, ImgFileInd.ToString("D5") + "-" + content + ".png"));
+        }
+
+        private void batchGenerateQRImage(string ImgDir, QRCodeGenerator.ECCLevel ecc)
+        {
+            System.Drawing.Bitmap logo = SinoCloudWisdomBarCodeGenerator.Properties.Resources.logo;
+            while (ImgFileInd < 50000)
+            {
+                string content = getRandom(range) + barcodeFlagSwitch0;
+                generateQRImage(content, ImgDir, ecc, logo, false, true);
+            }
+        }
+
+#endif
+
     }
 }

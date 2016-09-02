@@ -644,15 +644,16 @@ namespace QRCoder
                     generatorPolynom.PolyItems[i].Exponent + (messagePolynom.PolyItems.Count-1));
             
             var leadTermSource = messagePolynom;
-            for (var i = 0; i < messagePolynom.PolyItems.Count || (leadTermSource.PolyItems.Count > 0 && leadTermSource.PolyItems[leadTermSource.PolyItems.Count-1].Exponent > 0); i++)
+            for (var i = 0; (leadTermSource.PolyItems.Count > 0 && leadTermSource.PolyItems[leadTermSource.PolyItems.Count-1].Exponent > 0); i++)
             {
                 if (leadTermSource.PolyItems[0].Coefficient == 0)
                 {   
                     leadTermSource.PolyItems.RemoveAt(0);
+                    leadTermSource.PolyItems.Add(new PolynomItem(0, leadTermSource.PolyItems[leadTermSource.PolyItems.Count - 1].Exponent - 1));
                 }
                 else
                 {
-                    var resPoly = this.MultiplyGeneratorPolynomByLeadterm(generatorPolynom, this.ConvertToAlphaNotation(leadTermSource).PolyItems[0], i);
+                    var resPoly = this.MultiplyGeneratorPolynomByLeadtermCoefficient(generatorPolynom, this.GetAlphaExpFromIntVal(leadTermSource.PolyItems[0].Coefficient), i);
                     resPoly = this.ConvertToDecNotation(resPoly);
                     resPoly = this.XORPolynoms(leadTermSource, resPoly);
                     leadTermSource = resPoly;
@@ -661,17 +662,6 @@ namespace QRCoder
             return leadTermSource.PolyItems.Select(x => DecToBin(x.Coefficient, 8)).ToList();
         }
 
-        private Polynom ConvertToAlphaNotation(Polynom poly)
-        {
-            var newPoly = new Polynom();
-            for (var i = 0; i < poly.PolyItems.Count; i++)
-                newPoly.PolyItems.Add(
-                    new PolynomItem(
-                        (poly.PolyItems[i].Coefficient != 0
-                            ? this.GetAlphaExpFromIntVal(poly.PolyItems[i].Coefficient)
-                            : 0), poly.PolyItems[i].Exponent));
-            return newPoly;
-        }
 
         private Polynom ConvertToDecNotation(Polynom poly)
         {
@@ -807,7 +797,7 @@ namespace QRCoder
 
         private int GetDataLength(EncodingMode encoding, string plainText, string codedText, bool forceUtf8)
         {
-            return forceUtf8 || this.IsUtf8(encoding, plainText) ? (codedText.Length / 8) : plainText.Length;
+            return (forceUtf8 || this.IsUtf8(encoding, plainText)) ? (codedText.Length / 8) : plainText.Length;
         }
 
         private bool IsUtf8(EncodingMode encoding, string plainText)
@@ -922,15 +912,14 @@ namespace QRCoder
             return resultPolynom;
         }
 
-
-        private Polynom MultiplyGeneratorPolynomByLeadterm(Polynom genPolynom, PolynomItem leadTerm, int lowerExponentBy)
+        private Polynom MultiplyGeneratorPolynomByLeadtermCoefficient(Polynom genPolynom, int Coefficient, int lowerExponentBy)
         {
             var resultPolynom = new Polynom();
             foreach (var polItemBase in genPolynom.PolyItems)
             {
                 var polItemRes = new PolynomItem(
 
-                    (polItemBase.Coefficient + leadTerm.Coefficient) % 255,
+                    ShrinkAlphaExp(polItemBase.Coefficient + Coefficient),
                     polItemBase.Exponent - lowerExponentBy
                 );
                 resultPolynom.PolyItems.Add(polItemRes);
@@ -983,8 +972,9 @@ namespace QRCoder
         private static int ShrinkAlphaExp(int alphaExp)
         {
             // ReSharper disable once PossibleLossOfFraction
-            return (int)((alphaExp % 256) + Math.Floor((double)(alphaExp / 256)));
-        }
+            //return (int)((alphaExp % 256) + Math.Floor((double)(alphaExp / 256)));
+            return alphaExp % 255;
+       }
 
         private void CreateAlphanumEncDict()
         {
