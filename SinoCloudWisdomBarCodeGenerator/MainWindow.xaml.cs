@@ -22,6 +22,8 @@ using System.IO;
 using System.Configuration;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Net.Sockets;
+using System.Diagnostics;
 
 namespace SinoCloudWisdomBarCodeGenerator
 {
@@ -92,6 +94,100 @@ namespace SinoCloudWisdomBarCodeGenerator
             myLabel.Content += new System.IO.FileInfo(logFilename).FullName;
         }
 
+        public static void AddAddressToAcl(string address, string domain, string user)
+        {
+            string args = string.Format(@"http add urlacl url={0} user={1}\{2}", address, domain, user);
+
+            ProcessStartInfo startInfo = new ProcessStartInfo("netsh", args);
+            startInfo.Verb = "runas";
+            startInfo.CreateNoWindow = true;
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            startInfo.UseShellExecute = true;
+
+            Process.Start(startInfo).WaitForExit();
+        }
+
+        HttpListener listener = new HttpListener();
+
+        public void HttpListenerThread()
+        {
+            try
+            {
+                string url = "http://+:8676/zyzh/";
+                //AddAddressToAcl(url, Environment.UserDomainName, Environment.UserName);
+                AddAddressToAcl(url, "", "Everyone");
+
+                // 读取计算机的名称
+                string name = System.Net.Dns.GetHostName();
+                IPAddress[] address = Dns.GetHostAddresses(name);
+                foreach(var addr in address)
+                {
+                    //AddAddressToAcl(addr.ToString(), Environment.UserDomainName, Environment.UserName);
+                }
+
+                listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;//指定身份验证 Anonymous匿名访问
+                //listerner.Prefixes.Add("http://+:8676/");
+                //listerner.Prefixes.Add("http://*:8676/zyzh/");
+                listener.Prefixes.Add("http://+:8676/zyzh/");
+                //listerner.Prefixes.Add("http://localhost:8676/zyzh/");
+                listener.Start();
+                Console.WriteLine("WebServer Start Successed.......");
+                while (true)
+                {
+                    //等待请求连接
+                    //没有请求则GetContext处于阻塞状态
+                    HttpListenerContext ctx = listener.GetContext();
+                    ctx.Response.StatusCode = 200;//设置返回给客服端http状态代码
+                    string content = ctx.Request.QueryString["barcode"];
+
+                    //使用Writer输出http响应代码
+                    using (StreamWriter writer = new StreamWriter(ctx.Response.OutputStream))
+                    {
+                        Console.WriteLine("hello");
+                        writer.WriteLine("<html><head><title>The WebServer Test</title></head><body>");
+                        writer.WriteLine("<div style=\"height:20px;color:blue;text-align:center;\"><p> hello {0}</p></div>", content);
+                        writer.WriteLine("<ul>");
+
+                        foreach (string header in ctx.Request.Headers.Keys)
+                        {
+                            writer.WriteLine("<li><b>{0}:</b>{1}</li>", header, ctx.Request.Headers[header]);
+
+                        }
+                        writer.WriteLine("</ul>");
+                        writer.WriteLine("</body></html>");
+
+                        writer.Close();
+                        ctx.Response.Close();
+                    }
+
+                    if (content != null)
+                    {
+                        if (transferSwitch)
+                        {
+                            get2Url(serverUrl + "?barcode=" + content);
+                            //post2Url(serverUrl, "barcode=" + barcode, Encoding.UTF8);
+                        }
+                        var sim = new InputSimulator();
+                        sim.Keyboard.TextEntry(content);
+                        sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                    }
+
+                }
+            }
+            catch (HttpListenerException ex)
+            {
+                if ("GetContext" != ex.TargetSite.Name)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            //listener.Stop();
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             transferSwitch = "true" == ConfigurationManager.AppSettings[transferSwitchKey];
@@ -103,6 +199,17 @@ namespace SinoCloudWisdomBarCodeGenerator
                     MessageBox.Show(serverUrlKey + " not found in configuration.\r\nprogram will exit.");
                     Application.Current.Shutdown();
                 }
+            }
+
+            System.Threading.Thread threadHttp = new System.Threading.Thread(new System.Threading.ThreadStart(HttpListenerThread));
+            threadHttp.Start();
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (listener.IsListening)
+            {
+                listener.Stop();
             }
         }
 

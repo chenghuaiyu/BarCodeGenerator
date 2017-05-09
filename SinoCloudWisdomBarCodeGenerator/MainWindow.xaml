@@ -1,7 +1,7 @@
 ﻿<Window x:Class="SinoCloudWisdomBarCodeGenerator.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="中云智慧（北京）科技有限公司" Height="768" Width="1024" WindowState="Maximized" Loaded="Window_Loaded">
+        Title="中云智慧（北京）科技有限公司" Height="768" Width="1024" WindowState="Maximized" Loaded="Window_Loaded" Closing="Window_Closing">
     <Grid Margin="0,0,2,6" FocusManager.FocusedElement="{Binding ElementName=myTextBox}">
         <Grid.RowDefinitions>
             <RowDefinition Height="47*"/>
