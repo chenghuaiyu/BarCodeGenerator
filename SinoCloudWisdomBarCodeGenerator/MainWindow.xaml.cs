@@ -162,11 +162,6 @@ namespace SinoCloudWisdomBarCodeGenerator
 
                     if (content != null)
                     {
-                        if (transferSwitch)
-                        {
-                            get2Url(serverUrl + "?barcode=" + content);
-                            //post2Url(serverUrl, "barcode=" + barcode, Encoding.UTF8);
-                        }
                         var sim = new InputSimulator();
                         sim.Keyboard.TextEntry(content);
                         sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
